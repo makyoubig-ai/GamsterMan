@@ -3,35 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark AFK Client - Pro Console</title>
+  <title>Dark AFK Client - Pro Purple v2</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     :root {
-      --bg-color: #07090e;
-      --card-bg: #121824;
-      --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.4);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #1e293b;
+      --bg-color: #090a0f;
+      --card-bg: #131622;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --accent-glow: rgba(139, 92, 246, 0.35);
+      --text: #ffffff;
+      --text-muted: #9ca3af;
+      --border: #23283d;
       --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.4);
+      --danger-glow: rgba(239, 68, 68, 0.3);
       --success: #22c55e;
-      --success-glow: rgba(34, 197, 94, 0.4);
+      --success-glow: rgba(34, 197, 94, 0.3);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: var(--bg-color); color: var(--text); padding: 20px; }
     
-    /* Header & Glowing Effects */
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
-    header h1 { color: var(--accent); font-size: 26px; text-shadow: 0 0 12px var(--accent-glow); letter-spacing: 0.5px; }
-    .stats-bar { display: flex; gap: 15px; }
-    .stat-box { background: var(--card-bg); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; box-shadow: 0 0 8px rgba(0,0,0,0.5); }
+    header h1 { color: var(--accent); font-size: 24px; font-weight: 700; text-shadow: 0 0 15px var(--accent-glow); letter-spacing: 0.5px; }
+    .stats-bar { display: flex; gap: 12px; }
+    .stat-box { background: var(--card-bg); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+    .stat-box span { color: var(--text); font-weight: 600; }
     
-    /* Navigation Tabs */
-    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap; }
-    .tab-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border); padding: 10px 20px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-    .tab-btn.active { background: var(--accent); color: var(--bg-color); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; }
+    .tab-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border); padding: 10px 18px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; }
+    .tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
     .tab-btn:hover { color: var(--text); border-color: var(--accent); }
 
     .tab-content { display: none; }
@@ -40,49 +40,56 @@
     .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
     @media (max-width: 1024px) { .grid-container { grid-template-columns: 1fr; } }
     
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
-    .card h2 { font-size: 18px; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; text-shadow: 0 0 8px var(--accent-glow); }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .card h2 { font-size: 16px; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; font-weight: 600; }
     
-    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; margin-top: 10px; }
-    input, textarea { width: 100%; background: #07090e; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 10px; }
-    textarea { resize: vertical; height: 80px; }
-    button { background: var(--accent); color: var(--bg-color); border: none; padding: 10px 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 0 10px var(--accent-glow); }
-    button:hover { filter: brightness(1.2); }
+    label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, textarea { width: 100%; background: #090a0f; border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; transition: border-color 0.2s; }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea { resize: vertical; height: 75px; }
     
-    .bot-card { background: #07090e; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-    .bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
-    .bot-status { font-size: 12px; color: var(--success); text-shadow: 0 0 6px var(--success-glow); }
-    .bot-details { font-size: 12px; color: var(--text-muted); display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
-    .bot-logs { background: #020408; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; color: var(--text-muted); max-height: 60px; overflow-y: auto; margin-bottom: 8px; border: 1px solid #111827; }
+    button { background: var(--accent); color: #ffffff; border: none; padding: 10px 16px; font-weight: 600; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.2s; box-shadow: 0 0 12px var(--accent-glow); font-size: 14px; }
+    button:hover { background: var(--accent-hover); filter: brightness(1.1); }
+    
+    .bot-card { background: #090a0f; border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+    .bot-title-area { display: flex; align-items: center; gap: 8px; }
+    .player-head { width: 22px; height: 22px; image-rendering: pixelated; border-radius: 4px; border: 1px solid var(--border); }
+    .bot-status { font-size: 11px; color: var(--success); background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(34,197,94,0.2); }
+    .bot-details { font-size: 12px; color: var(--text-muted); display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; background: #131622; padding: 8px; border-radius: 6px; border: 1px solid var(--border); }
+    .bot-details b { color: var(--text); }
+    .bot-logs { background: #040507; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 11px; color: var(--text-muted); max-height: 70px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border); }
     
     .actions-row { display: flex; gap: 8px; }
     .btn-danger { background: var(--danger); color: white; width: auto; padding: 6px 12px; font-size: 12px; box-shadow: 0 0 8px var(--danger-glow); }
-    .btn-secondary { background: #334155; color: white; width: auto; padding: 6px 12px; font-size: 12px; box-shadow: none; }
+    .btn-secondary { background: #374151; color: white; width: auto; padding: 6px 12px; font-size: 12px; box-shadow: none; }
+    .btn-secondary:hover { background: #4b5563; }
     .btn-success { background: var(--success); color: white; box-shadow: 0 0 8px var(--success-glow); }
 
-    .generator-box { background: #07090e; border: 1px dashed var(--accent); border-radius: 8px; padding: 20px; text-align: center; margin-top: 10px; }
-    .generated-name-display { font-size: 22px; font-weight: bold; color: var(--accent); margin: 15px 0; text-shadow: 0 0 10px var(--accent-glow); font-family: monospace; }
+    .generator-box { background: #090a0f; border: 1px dashed var(--accent); border-radius: 10px; padding: 24px; text-align: center; margin-top: 10px; }
+    .generated-name-display { font-size: 24px; font-weight: bold; color: var(--accent); margin: 10px 0; text-shadow: 0 0 12px var(--accent-glow); font-family: monospace; }
+    .skin-preview-container { margin: 15px 0; min-height: 140px; display: flex; justify-content: center; align-items: center; gap: 15px; }
+    .skin-preview-container img { height: 130px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(139,92,246,0.3)); }
+    .head-preview { width: 48px; height: 48px; image-rendering: pixelated; border-radius: 6px; border: 1px solid var(--border); background: #131622; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>⚡ DARK AFK CLIENT <span style="font-size:14px; color:var(--text-muted);">v2.6 Pro</span></h1>
+    <h1>⚡ DARK AFK CLIENT <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">// PRO PURPLE v2</span></h1>
     <div class="stats-bar">
       <div class="stat-box">RAM: <span id="ram-stat">0%</span></div>
       <div class="stat-box">CPU: <span id="cpu-stat">0%</span></div>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('consoleTab', this)">🎮 Console Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('generatorTab', this)">✨ NameMC Generator</button>
+    <button class="tab-btn" onclick="switchTab('generatorTab', this)">✨ NameMC & Skin Viewer</button>
     <button class="tab-btn" onclick="switchTab('staffTab', this)">🛡️ Staff Evasion</button>
     <button class="tab-btn" onclick="switchTab('logsTab', this)">📊 Success & Banned Logs</button>
   </div>
 
-  <!-- TAB 1: CONSOLE DASHBOARD -->
   <div id="consoleTab" class="tab-content active">
     <div class="grid-container">
       <div>
@@ -100,7 +107,7 @@
           <label>Proxies (SOCKS5 / IP:Port:User:Pass)</label>
           <textarea id="proxies" placeholder="192.168.1.50:1080&#10;192.168.1.51:1080"></textarea>
           
-          <button onclick="deployBots()">🚀 Launch Bots</button>
+          <button onclick="deployBots()" style="margin-top: 5px;">🚀 Launch Bots</button>
         </div>
       </div>
 
@@ -112,7 +119,7 @@
           </div>
         </div>
 
-        <div class="card" style="border-color: var(--danger);">
+        <div class="card" style="border-color: rgba(239,68,68,0.3);">
           <h2>⚠️ Proxy-Down Section (<span id="proxy-down-count">0</span>)</h2>
           <div id="proxy-down-container">
             <p style="color: var(--text-muted); font-size: 13px;">No bots with dead proxies.</p>
@@ -122,23 +129,28 @@
     </div>
   </div>
 
-  <!-- TAB 2: NAMEMC GENERATOR -->
   <div id="generatorTab" class="tab-content">
     <div class="card" style="max-width: 600px; margin: 0 auto;">
-      <h2>✨ NameMC Unique Skin & Name Generator</h2>
+      <h2>✨ NameMC Trending & Skin Viewer</h2>
       <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
-        Generate unique, clean, non-duplicate NameMC-style gaming names combined with trending skin presets instantly.
+        Pull real trending usernames, player head avatars, and active skin renders directly sourced from NameMC.com database indices.
       </p>
       
       <div class="generator-box">
-        <div style="font-size: 12px; color: var(--text-muted);">GENERATED USERNAME:</div>
-        <div class="generated-name-display" id="generatedNameBox">Click Generate Below</div>
-        <button onclick="generateName()" style="max-width: 200px; margin: 0 auto;">Generate Name</button>
+        <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 1px;">TRENDING USERNAME</div>
+        <div class="generated-name-display" id="generatedNameBox">Click Fetch Below</div>
+        
+        <div class="skin-preview-container" id="skinPreviewBox">
+          <span style="color: var(--text-muted); font-size: 13px;">Skin & Head render preview will appear here</span>
+        </div>
+
+        <div id="namemcLinkContainer" style="margin-bottom: 15px;"></div>
+        
+        <button onclick="generateName()" style="max-width: 240px; margin: 0 auto;">Fetch NameMC Profile & Skin</button>
       </div>
     </div>
   </div>
 
-  <!-- TAB 3: STAFF EVASION -->
   <div id="staffTab" class="tab-content">
     <div class="card" style="max-width: 600px; margin: 0 auto;">
       <h2>🛡️ Staff Evasion Manager</h2>
@@ -152,17 +164,16 @@
     </div>
   </div>
 
-  <!-- TAB 4: SUCCESS & BANNED LOGS -->
   <div id="logsTab" class="tab-content">
     <div class="grid-container">
-      <div class="card" style="border-color: var(--success);">
+      <div class="card" style="border-color: rgba(34,197,94,0.3);">
         <h2>🎉 Successful AFK Completed (20h 2m) (<span id="success-count">0</span>)</h2>
         <div id="success-bots-container">
           <p style="color: var(--text-muted); font-size: 13px;">No completed bots yet.</p>
         </div>
       </div>
 
-      <div class="card" style="border-color: var(--danger);">
+      <div class="card" style="border-color: rgba(239,68,68,0.3);">
         <h2>🚫 Banned Bots Log (<span id="banned-count">0</span>)</h2>
         <div id="banned-bots-container">
           <p style="color: var(--text-muted); font-size: 13px;">No banned bots recorded.</p>
@@ -199,8 +210,13 @@
       socket.emit('generate_namemc_name');
     }
 
-    socket.on('namemc_name_result', name => {
-      document.getElementById('generatedNameBox').innerText = name;
+    socket.on('namemc_data_result', data => {
+      document.getElementById('generatedNameBox').innerText = data.name;
+      document.getElementById('skinPreviewBox').innerHTML = `
+        <img class="head-preview" src="${data.head}" alt="Player Head">
+        <img src="${data.render}" alt="Skin Render">
+      `;
+      document.getElementById('namemcLinkContainer').innerHTML = `<a href="${data.url}" target="_blank" style="color: var(--accent); font-size: 12px; text-decoration: underline;">🔗 View on NameMC.com</a>`;
     });
 
     socket.on('deploy_success', msg => alert(msg));
@@ -215,7 +231,7 @@
       document.getElementById('banned-count').innerText = data.banned.length;
 
       document.getElementById('staff-list').innerHTML = data.staff.map(s => 
-        `<span style="background:#07090e; border:1px solid var(--border); padding:6px 12px; border-radius:6px; display:inline-flex; align-items:center; gap:8px;">${s} <button onclick="removeStaff('${s}')" class="btn-danger" style="padding:2px 6px; font-size:10px;">X</button></span>`
+        `<span style="background:#090a0f; border:1px solid var(--border); padding:6px 12px; border-radius:6px; display:inline-flex; align-items:center; gap:8px;">${s} <button onclick="removeStaff('${s}')" class="btn-danger" style="padding:2px 6px; font-size:10px;">X</button></span>`
       ).join('');
 
       const activeContainer = document.getElementById('active-bots-container');
@@ -225,7 +241,10 @@
         activeContainer.innerHTML = data.active.map(b => `
           <div class="bot-card">
             <div class="bot-header">
-              <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              <div class="bot-title-area">
+                <img class="player-head" src="${b.head}" alt="Head">
+                <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              </div>
               <span class="bot-status">${b.status}</span>
             </div>
             <div class="bot-details">
@@ -236,8 +255,8 @@
             </div>
             <div class="bot-logs">${b.logs.join('<br>')}</div>
             <div class="actions-row">
-              <input type="text" id="chat_${b.id}" placeholder="Send chat message..." style="margin-bottom:0; font-size:12px; padding:6px;">
-              <button class="btn-secondary" onclick="sendChat('${b.id}')">Chat</button>
+              <input type="text" id="chat_${b.id}" placeholder="Type chat / command as bot..." style="margin-bottom:0; font-size:12px; padding:6px;">
+              <button class="btn-secondary" onclick="sendChat('${b.id}')">Send</button>
               <button class="btn-danger" onclick="stopBot('${b.id}')">Stop</button>
             </div>
           </div>
@@ -249,9 +268,12 @@
         proxyContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No bots with dead proxies.</p>';
       } else {
         proxyContainer.innerHTML = data.proxyDown.map(b => `
-          <div class="bot-card" style="border-color: var(--danger);">
+          <div class="bot-card" style="border-color: rgba(239,68,68,0.4);">
             <div class="bot-header">
-              <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              <div class="bot-title-area">
+                <img class="player-head" src="${b.head}" alt="Head">
+                <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              </div>
               <span style="color:var(--danger); font-size:12px;">Proxy DEAD</span>
             </div>
             <div class="bot-details">
@@ -268,9 +290,12 @@
         successContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No completed bots yet.</p>';
       } else {
         successContainer.innerHTML = data.successAfk.map(b => `
-          <div class="bot-card" style="border-color: var(--success);">
+          <div class="bot-card" style="border-color: rgba(34,197,94,0.4);">
             <div class="bot-header">
-              <span style="color: var(--success);">${b.username}</span>
+              <div class="bot-title-area">
+                <img class="player-head" src="${b.head}" alt="Head">
+                <span style="color: var(--success);">${b.username}</span>
+              </div>
               <span style="font-size:11px; color:var(--text-muted);">${b.completedAt}</span>
             </div>
             <div class="bot-details">
@@ -288,7 +313,7 @@
         bannedContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No banned bots recorded.</p>';
       } else {
         bannedContainer.innerHTML = data.banned.map(b => `
-          <div class="bot-card" style="border-color: var(--danger);">
+          <div class="bot-card" style="border-color: rgba(239,68,68,0.4);">
             <div class="bot-header">
               <span style="color: var(--danger);">${b.username}</span>
               <span style="font-size:11px; color:var(--text-muted);">${b.time}</span>
