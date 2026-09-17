@@ -1,314 +1,223 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Dark AFK Client</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Dark AFK Client - Console</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #070708; color: #f4f4f5; overflow-x: hidden; }
-    .glow-text { text-shadow: 0 0 25px rgba(255, 255, 255, 0.4); }
-    .glow-box { box-shadow: 0 0 40px rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .scroll-section { opacity: 0; transform: translateY(40px); transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
-    .scroll-section.visible { opacity: 1; transform: translateY(0); }
-    /* Hamburger animation */
-    .hamburger span { transition: all 0.3s ease; }
-    .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
-    .hamburger.active span:nth-child(2) { opacity: 0; }
-    .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text); padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+    header h1 { color: var(--accent); font-size: 24px; }
+    .stats-bar { display: flex; gap: 15px; }
+    .stat-box { background: var(--card-bg); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
+    
+    .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+    @media (max-width: 1024px) { .grid-container { grid-template-columns: 1fr; } }
+    
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .card h2 { font-size: 18px; margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    
+    label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 5px; margin-top: 10px; }
+    input, textarea { width: 100%; background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 6px; font-size: 14px; margin-bottom: 10px; }
+    textarea { resize: vertical; height: 80px; }
+    button { background: var(--accent); color: #0f172a; border: none; padding: 10px 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: background 0.2s; }
+    button:hover { background: var(--accent-hover); }
+    
+    .bot-card { background: #0f172a; border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
+    .bot-status { font-size: 12px; color: var(--success); }
+    .bot-details { font-size: 12px; color: var(--text-muted); display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 8px; }
+    .bot-logs { background: #020617; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 11px; color: var(--text-muted); max-height: 60px; overflow-y: auto; margin-bottom: 8px; }
+    
+    .actions-row { display: flex; gap: 8px; }
+    .btn-danger { background: var(--danger); color: white; width: auto; padding: 6px 12px; font-size: 12px; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-secondary { background: #475569; color: white; width: auto; padding: 6px 12px; font-size: 12px; }
+    
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); }
   </style>
 </head>
-<body class="selection:bg-white selection:text-black">
+<body>
 
-  <!-- TOP NAVIGATION BAR (Hamburger Menu) -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-[#070708]/80 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()">
-      <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-extrabold text-white text-sm">DA</div>
-      <span class="font-extrabold tracking-wider text-sm text-white uppercase">Dark AFK Client</span>
-    </div>
-    <div class="flex items-center gap-4">
-      <button onclick="enterConsole()" class="px-4 py-2 bg-white text-black font-extrabold rounded-lg text-xs hover:bg-zinc-200 transition-all">Console ⚡</button>
-      <!-- Hamburger Button (Transforms into Cross) -->
-      <button onclick="toggleMenu()" id="menu-btn" class="hamburger w-10 h-10 flex flex-col justify-center items-center gap-1.5 bg-white/5 border border-white/10 rounded-lg cursor-pointer">
-        <span class="w-5 h-0.5 bg-white block"></span>
-        <span class="w-5 h-0.5 bg-white block"></span>
-        <span class="w-5 h-0.5 bg-white block"></span>
-      </button>
+  <header>
+    <h1>🚀 Dark AFK Client Console</h1>
+    <div class="stats-bar">
+      <div class="stat-box">RAM: <span id="ram-stat">0%</span></div>
+      <div class="stat-box">CPU: <span id="cpu-stat">0%</span></div>
     </div>
   </header>
 
-  <!-- SLIDE-OUT NAVIGATION MENU -->
-  <div id="slide-menu" class="fixed inset-y-0 right-0 w-80 bg-[#0b0b0e] border-l border-white/10 z-40 transform translate-x-full transition-transform duration-300 p-8 pt-24 flex flex-col justify-between shadow-2xl">
-    <div class="space-y-4">
-      <h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-6">Navigation Menu</h3>
-      <button onclick="navTo('home')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">🏠 Home Landing</button>
-      <button onclick="navTo('console')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">⚡ Console Dashboard</button>
-      <button onclick="navTo('success')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">🏆 Successful AFK Bots</button>
-      <button onclick="navTo('proxydown')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">⚠️ Proxy Down Bots</button>
-      <button onclick="navTo('banned')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">🚫 Banned Bots</button>
-      <button onclick="navTo('staff')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">🛡️ Staff Manager</button>
-      <button onclick="navTo('namegen')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">✨ Name Generator</button>
-      <button onclick="navTo('usage')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">📊 System Usage</button>
-      <button onclick="navTo('about')" class="w-full text-left py-3 px-4 rounded-xl hover:bg-white/5 font-bold text-sm text-zinc-300 hover:text-white transition-all">ℹ️ About Ryuk</button>
-    </div>
-    <div class="pt-6 border-t border-white/10 text-xs text-zinc-500 text-center">
-      Copyright 2026 By Ryuk. All Rights Reserved.
-    </div>
-  </div>
-
-  <!-- LANDING / INTRO PAGE -->
-  <div id="landing-page" class="relative pt-20">
-    
-    <!-- Intro Section -->
-    <section class="h-screen flex flex-col items-center justify-center text-center px-4 scroll-section visible">
-      <div class="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/5 border border-white/10 text-zinc-300 text-xs font-semibold tracking-widest uppercase">
-        Next-Gen Minecraft Automation
-      </div>
-      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 glow-text">
-        Minecraft Dark AFK Client
-      </h1>
-      <p class="max-w-2xl text-base md:text-lg text-zinc-400 mb-10 leading-relaxed font-medium">
-        Welcome to Minecraft Dark AFK Client. This client lets you AFK your Minecraft accounts securely while you sleep, featuring premium NameMC skin emulation, anti-staff evasion, and smart lobby exploration.
-      </p>
-      <button onclick="enterConsole()" class="px-8 py-4 rounded-xl bg-white text-black font-extrabold text-sm hover:bg-zinc-200 transition-all shadow-xl shadow-white/5">
-        Enter Console Dashboard ⚡
-      </button>
-    </section>
-
-    <!-- Bot Feature 1: NameMC Skins -->
-    <section class="min-h-[80vh] flex items-center justify-center px-4 py-20 scroll-section">
-      <div class="max-w-4xl grid md:grid-cols-2 gap-10 items-center bg-[#0d0d10] p-8 rounded-3xl glow-box">
-        <div>
-          <span class="text-zinc-500 font-extrabold tracking-widest text-xs uppercase">Feature 01</span>
-          <h2 class="text-3xl font-extrabold mt-2 mb-4">Unique NameMC Skin Emulation</h2>
-          <p class="text-zinc-400 text-sm leading-relaxed">
-            Every deployed bot automatically executes <code class="text-white bg-white/10 px-2 py-0.5 rounded">/skin set</code> using premium NameMC player profiles. No two bots share the same skin, ensuring natural appearance and evasion detection.
-          </p>
-        </div>
-        <div class="bg-black p-6 rounded-2xl border border-white/10 font-mono text-xs text-zinc-300 space-y-2">
-          <p class="text-zinc-500">> Assigned Skin: <span class="text-white">Notch</span></p>
-          <p class="text-zinc-500">> Executing command...</p>
-          <p class="text-white">> /skin set Notch [SUCCESS]</p>
-          <p class="text-emerald-400">> Skin Head rendered in dashboard UI.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Bot Feature 2: Smart Lobby Movement & 20h2m Completion -->
-    <section class="min-h-[80vh] flex items-center justify-center px-4 py-20 scroll-section">
-      <div class="max-w-4xl grid md:grid-cols-2 gap-10 items-center bg-[#0d0d10] p-8 rounded-3xl glow-box">
-        <div class="bg-black p-6 rounded-2xl border border-white/10 font-mono text-xs text-zinc-300 space-y-2 order-2 md:order-1">
-          <p class="text-zinc-500">> Running & Jumping in lobby...</p>
-          <p class="text-zinc-500">> Exploring new locations every 5-10m.</p>
-          <p class="text-white">> 20h 2m Uptime Target: <span class="text-emerald-400">Active</span></p>
-          <p class="text-emerald-400">> Auto-archives to Success AFK section upon completion.</p>
-        </div>
-        <div class="order-1 md:order-2">
-          <span class="text-zinc-500 font-extrabold tracking-widest text-xs uppercase">Feature 02</span>
-          <h2 class="text-3xl font-extrabold mt-2 mb-4">Lobby Exploration & 20h 2m Archive</h2>
-          <p class="text-zinc-400 text-sm leading-relaxed">
-            Bots actively run, jump, and explore different parts of large lobbies every 5 to 10 minutes. Once a bot reaches exactly 20 hours and 2 minutes of successful uptime, it gracefully disconnects and archives itself into the Successful AFK list.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Bot Feature 3: Anti-Staff Radar -->
-    <section class="min-h-[80vh] flex items-center justify-center px-4 py-20 scroll-section">
-      <div class="max-w-4xl grid md:grid-cols-2 gap-10 items-center bg-[#0d0d10] p-8 rounded-3xl glow-box">
-        <div>
-          <span class="text-zinc-500 font-extrabold tracking-widest text-xs uppercase">Feature 03</span>
-          <h2 class="text-3xl font-extrabold mt-2 mb-4">Anti-Staff Radar & Chat Control</h2>
-          <p class="text-zinc-400 text-sm leading-relaxed">
-            Real-time player monitoring detects staff instantly. If staff appears, the bot disconnects and reconnects in 30 seconds. Plus, you can execute individual chat commands for any bot right from your console dashboard.
-          </p>
-        </div>
-        <div class="bg-black p-6 rounded-2xl border border-white/10 font-mono text-xs text-zinc-300 space-y-2">
-          <p class="text-red-400">> [STAFF DETECTED] admin_staff joined.</p>
-          <p class="text-yellow-400">> Disconnecting safely... Rejoining in 30s.</p>
-          <p class="text-white">> Live individual bot chat console ready.</p>
-        </div>
-      </div>
-    </section>
-
-    <footer class="py-12 text-center text-zinc-600 text-xs border-t border-white/5">
-      <p>Copyright 2026 By Ryuk. All Rights Reserved.</p>
-    </footer>
-  </div>
-
-  <!-- CONSOLE / DASHBOARD PAGE (Hidden Initially) -->
-  <div id="dashboard-console" class="hidden min-h-screen p-4 md:p-8 max-w-7xl mx-auto pt-24">
-    
-    <!-- Admin Header -->
-    <div class="bg-[#0d0d10] border border-white/10 p-6 rounded-3xl glow-box mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
-      <div class="flex items-center gap-4">
-        <!-- Borkelias Player Head -->
-        <img src="https://mc-heads.net/avatar/Borkelias/120" alt="Borkelias" class="w-16 h-16 rounded-2xl border border-white/20 bg-black shadow-lg">
-        <div>
-          <h1 class="text-2xl font-extrabold tracking-tight glow-text">Welcome Admin!</h1>
-          <p class="text-xs text-zinc-400 mt-1">Creator: <span class="text-white font-bold">Ryuk</span> | Master Bot Deployment Center</p>
-        </div>
-      </div>
-      <button onclick="goHome()" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold transition-all">← Back to Landing</button>
-    </div>
-
-    <!-- Main Grid: Deploy & Staff -->
-    <div class="grid lg:grid-cols-3 gap-6 mb-8">
-      
-      <!-- Deploy Form -->
-      <div class="bg-[#0d0d10] p-6 rounded-3xl glow-box lg:col-span-2">
-        <h2 class="text-base font-extrabold mb-4 text-white">🚀 Deploy New Bots</h2>
-        <form id="deploy-form" class="space-y-4">
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-zinc-400 mb-1 font-semibold">Server IP:Port</label>
-              <input type="text" id="serverIP" required placeholder="as.gamester.org:25565" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none">
-            </div>
-            <div>
-              <label class="block text-xs text-zinc-400 mb-1 font-semibold">AuthMe Password (Optional)</label>
-              <input type="password" id="password" placeholder="Account Password" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none">
-            </div>
-          </div>
-          <div>
-            <label class="block text-xs text-zinc-400 mb-1 font-semibold">Usernames (Comma Separated)</label>
-            <textarea id="usernamesRaw" required rows="2" placeholder="Bot1, Bot2, Bot3, Bot4" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none"></textarea>
-          </div>
-          <div>
-            <label class="block text-xs text-zinc-400 mb-1 font-semibold">Proxies (Comma Separated - Max 4 bots per proxy)</label>
-            <textarea id="proxiesRaw" rows="2" placeholder="ip:port@user:pass" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none"></textarea>
-          </div>
-          <button type="submit" class="w-full py-3 bg-white text-black font-extrabold rounded-xl text-xs hover:bg-zinc-200 transition-all shadow-lg shadow-white/5">Deploy Bots Now</button>
-        </form>
-        <div id="deploy-msg" class="mt-3 text-xs font-semibold"></div>
+  <div class="grid-container">
+    <!-- LEFT PANEL: DEPLOY & CONTROLS -->
+    <div>
+      <div class="card">
+        <h2>Deploy Bots</h2>
+        <label>Server IP:Port</label>
+        <input type="text" id="server-ip" placeholder="gamester.org:25565">
+        
+        <label>Usernames (Comma Separated)</label>
+        <textarea id="usernames" placeholder="BotOne, BotTwo, BotThree"></textarea>
+        
+        <label>Server Password (AuthMe)</label>
+        <input type="password" id="password" placeholder="Optional password">
+        
+        <label>Proxies (SOCKS5 / IP:Port:User:Pass)</label>
+        <textarea id="proxies" placeholder="192.168.1.50:1080&#10;192.168.1.51:1080"></textarea>
+        
+        <button onclick="deployBots()">Launch Bots</button>
       </div>
 
-      <!-- Staff Manager Section -->
-      <div class="bg-[#0d0d10] p-6 rounded-3xl glow-box flex flex-col justify-between">
-        <div>
-          <h2 class="text-base font-extrabold mb-4 text-white">🛡️ Staff Manager</h2>
-          <div class="flex gap-2 mb-4">
-            <input type="text" id="staffInput" placeholder="Staff Username" class="w-full bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none">
-            <button onclick="addStaff()" class="px-4 bg-white/10 hover:bg-white/20 font-bold rounded-xl text-xs">Add</button>
-          </div>
-          <div id="staff-list-container" class="space-y-2 max-h-48 overflow-y-auto pr-1">
-            <!-- Populated via JS -->
-          </div>
+      <div class="card">
+        <h2>Staff Evasion Manager</h2>
+        <label>Add Staff Name</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="new-staff" placeholder="StaffUsername" style="margin-bottom:0;">
+          <button onclick="addStaff()" style="width: auto;">Add</button>
         </div>
-      </div>
-
-    </div>
-
-    <!-- SECTIONS TABS -->
-    <div class="flex flex-wrap gap-3 mb-6 border-b border-white/10 pb-4">
-      <button onclick="switchTab('active')" id="btn-active" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-white text-black transition-all">🟢 Active Bots (<span id="count-active">0</span>)</button>
-      <button onclick="switchTab('success')" id="btn-success" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#0d0d10] text-zinc-400 hover:text-white transition-all">🏆 Successful AFK (<span id="count-success">0</span>)</button>
-      <button onclick="switchTab('proxydown')" id="btn-proxydown" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#0d0d10] text-zinc-400 hover:text-white transition-all">⚠️ Proxy Down (<span id="count-proxydown">0</span>)</button>
-      <button onclick="switchTab('banned')" id="btn-banned" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#0d0d10] text-zinc-400 hover:text-white transition-all">🚫 Banned Bots (<span id="count-banned">0</span>)</button>
-      <button onclick="switchTab('tools')" id="btn-tools" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#0d0d10] text-zinc-400 hover:text-white transition-all">✨ Name Gen & Usage</button>
-    </div>
-
-    <!-- TAB 1: ACTIVE BOTS (With Skin Head & Chat) -->
-    <div id="tab-active" class="tab-content grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- TAB 2: SUCCESSFUL AFK BOTS (20h 2m completed) -->
-    <div id="tab-success" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- TAB 3: PROXY DOWN BOTS (With recovery tool) -->
-    <div id="tab-proxydown" class="tab-content hidden space-y-6">
-      <div class="bg-[#0d0d10] p-6 rounded-3xl glow-box flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div>
-          <h3 class="font-extrabold text-sm text-white">Proxy Recovery Center</h3>
-          <p class="text-xs text-zinc-400">Select up to 4 disconnected bots, enter a new proxy, and revive them instantly with uptime preserved.</p>
-        </div>
-        <div class="flex gap-2 w-full md:w-auto">
-          <input type="text" id="recoveryProxyInput" placeholder="New Proxy (ip:port@user:pass)" class="bg-black border border-white/10 rounded-xl p-3 text-xs focus:border-white outline-none w-full md:w-72">
-          <button onclick="recoverSelectedBots()" class="px-5 py-3 bg-white text-black font-extrabold rounded-xl text-xs whitespace-nowrap hover:bg-zinc-200">Revive (Max 4)</button>
-        </div>
-      </div>
-      <div id="proxydown-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    </div>
-
-    <!-- TAB 4: BANNED BOTS -->
-    <div id="tab-banned" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- TAB 5: NAME GENERATOR & SYSTEM USAGE -->
-    <div id="tab-tools" class="tab-content hidden grid md:grid-cols-2 gap-6">
-      <!-- Name Generator -->
-      <div class="bg-[#0d0d10] p-6 rounded-3xl glow-box flex flex-col justify-between">
-        <div>
-          <h3 class="font-extrabold text-sm text-white mb-2">✨ NameMC Random Name Generator</h3>
-          <p class="text-xs text-zinc-400 mb-4">Generates unique, unrepeated gaming usernames instantly.</p>
-          <div id="generated-name-box" class="bg-black p-4 rounded-2xl border border-white/10 font-mono text-sm text-emerald-400 text-center mb-4">
-            Click generate below...
-          </div>
-        </div>
-        <button onclick="generateRandomName()" class="w-full py-3 bg-white/10 hover:bg-white/20 font-extrabold rounded-xl text-xs text-white">Generate New Unique Name</button>
-      </div>
-
-      <!-- System Usage -->
-      <div class="bg-[#0d0d10] p-6 rounded-3xl glow-box space-y-4">
-        <h3 class="font-extrabold text-sm text-white">📊 System Resource Usage</h3>
-        <div>
-          <div class="flex justify-between text-xs text-zinc-400 mb-1">
-            <span>RAM Memory Usage</span>
-            <span id="ram-text" class="text-white font-bold">0%</span>
-          </div>
-          <div class="w-full bg-black h-2.5 rounded-full overflow-hidden border border-white/10">
-            <div id="ram-bar" class="bg-white h-full w-0 transition-all"></div>
-          </div>
-        </div>
-        <div>
-          <div class="flex justify-between text-xs text-zinc-400 mb-1">
-            <span>CPU Load</span>
-            <span id="cpu-text" class="text-white font-bold">0%</span>
-          </div>
-          <div class="w-full bg-black h-2.5 rounded-full overflow-hidden border border-white/10">
-            <div id="cpu-bar" class="bg-emerald-400 h-full w-0 transition-all"></div>
-          </div>
-        </div>
-        <div class="pt-4 border-t border-white/10 text-center">
-          <p class="text-xs text-zinc-500">About Creator: <span class="text-white font-bold">Ryuk</span></p>
-          <p class="text-[10px] text-zinc-600 mt-1">Copyright 2026 By Ryuk. All Rights Reserved.</p>
-        </div>
+        <div id="staff-list" style="margin-top:10px; font-size:13px; color:var(--text-muted);"></div>
       </div>
     </div>
 
+    <!-- RIGHT PANEL: ACTIVE BOTS & LOGS -->
+    <div>
+      <div class="card">
+        <h2>Active Running Bots (<span id="active-count">0</span>)</h2>
+        <div id="active-bots-container">
+          <p style="color: var(--text-muted); font-size: 13px;">No active bots deployed yet.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Proxy-Down Section (<span id="proxy-down-count">0</span>)</h2>
+        <div id="proxy-down-container">
+          <p style="color: var(--text-muted); font-size: 13px;">No bots with dead proxies.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const socket = io();
 
-    // Scroll Animation Observer
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.scroll-section').forEach(section => observer.observe(section));
+    function deployBots() {
+      const serverIP = document.getElementById('server-ip').value.trim();
+      const usernamesRaw = document.getElementById('usernames').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const proxiesRaw = document.getElementById('proxies').value.trim();
 
-    // Hamburger Menu Toggle
-    function toggleMenu() {
-      const menu = document.getElementById('slide-menu');
-      const btn = document.getElementById('menu-btn');
-      menu.classList.toggle('translate-x-full');
-      btn.classList.toggle('active');
+      if (!serverIP || !usernamesRaw) {
+        alert('Please fill in Server IP and Usernames!');
+        return;
+      }
+
+      socket.emit('deploy_bots', { serverIP, usernamesRaw, password, proxiesRaw });
     }
 
-    function navTo(section) {
-      toggleMenu();
-      if (section === 'home') {
-        document.getElementById('dashboard-console').classList.add('hidden');
-        document.getElementById('landing-page').classList.remove('hidden');
+    socket.on('deploy_success', msg => alert(msg));
+    socket.on('deploy_error', err => alert(err));
+
+    socket.on('dashboard_update', data => {
+      document.getElementById('ram-stat').innerText = data.system.ramUsage + '%';
+      document.getElementById('cpu-stat').innerText = data.system.cpuLoad + '%';
+      document.getElementById('active-count').innerText = data.active.length;
+      document.getElementById('proxy-down-count').innerText = data.proxyDown.length;
+
+      // Staff list render
+      document.getElementById('staff-list').innerHTML = data.staff.map(s => 
+        `<span>${s} <button onclick="removeStaff('${s}')" class="btn-danger" style="padding:2px 6px; font-size:10px; margin-left:5px;">X</button></span>`
+      ).join(' ');
+
+      // Active bots render
+      const activeContainer = document.getElementById('active-bots-container');
+      if (data.active.length === 0) {
+        activeContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No active bots deployed yet.</p>';
       } else {
-        enterConsole();
-        if (section === 'success') switchTab('success');
-        else if (section === 'proxydown') switchTab('proxydown');
-        else if (section === 'banned') switchTab('banned');
-        else if (section === 'staff') switchTab('active');
-        else if (section === 'namegen' || section === 'usage') switchTab('tools');
+        activeContainer.innerHTML = data.active.map(b => `
+          <div class="bot-card">
+            <div class="bot-header">
+              <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              <span class="bot-status">${b.status}</span>
+            </div>
+            <div class="bot-details">
+              <div>Skin: <b>${b.skin}</b></div>
+              <div>Uptime: <b>${b.uptime}</b></div>
+              <div>Pos: ${b.pos}</div>
+              <div>Ping: ${b.ping}ms</div>
+            </div>
+            <div class="bot-logs">${b.logs.join('<br>')}</div>
+            <div class="actions-row">
+              <input type="text" id="chat_${b.id}" placeholder="Send chat message..." style="margin-bottom:0; font-size:12px; padding:6px;">
+              <button class="btn-secondary" onclick="sendChat('${b.id}')">Chat</button>
+              <button class="btn-danger" onclick="stopBot('${b.id}')">Stop</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Proxy down render
+      const proxyContainer = document.getElementById('proxy-down-container');
+      if (data.proxyDown.length === 0) {
+        proxyContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No bots with dead proxies.</p>';
+      } else {
+        proxyContainer.innerHTML = data.proxyDown.map(b => `
+          <div class="bot-card" style="border-color: var(--danger);">
+            <div class="bot-header">
+              <span>${b.username} <span style="font-size:11px; color:var(--text-muted);">(${b.server})</span></span>
+              <span style="color:var(--danger); font-size:12px;">Proxy DEAD</span>
+            </div>
+            <div class="bot-details">
+              <div>Skin: ${b.skin}</div>
+              <div>Uptime Saved: ${b.uptime}</div>
+            </div>
+            <button onclick="reviveBot('${b.id}')" style="background:var(--success); color:white; font-size:12px; padding:6px;">Revive with New Proxy</button>
+          </div>
+        `).join('');
+      }
+    });
+
+    function sendChat(id) {
+      const msg = document.getElementById('chat_' + id).value;
+      if (msg) socket.emit('bot_chat', { id, message: msg });
+      document.getElementById('chat_' + id).value = '';
+    }
+
+    function stopBot(id) {
+      socket.emit('stop_bot', id);
+    }
+
+    function reviveBot(id) {
+      const newProxy = prompt('Enter new SOCKS5 proxy for this bot:');
+      if (newProxy) {
+        socket.emit('recover_proxy_down', { botIds: [id], newProxy });
       }
     }
 
-    function goHome() {
-      document.getElementById('dashboard-console').classList.add('hidden');
-      document.getEl
+    function addStaff() {
+      const name = document.getElementById('new-staff').value;
+      if (name) {
+        socket.emit('add_staff', name);
+        document.getElementById('new-staff').value = '';
+      }
+    }
+
+    function removeStaff(name) {
+      socket.emit('remove_staff', name);
+    }
+  </script>
+</body>
+</html>
