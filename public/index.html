@@ -3,386 +3,336 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dark AFK Client Pro v2.5</title>
+  <title>Minecraft Dark AFK Client Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="/socket.io/socket.io.js"></script>
   <style>
-    :root {
-      --bg: #090a0f;
-      --card-bg: #121520;
-      --card-inner: #0b0d14;
-      --accent: #8b5cf6;
-      --accent-hover: #7c3aed;
-      --accent-glow: rgba(139, 92, 246, 0.4);
-      --text: #f3f4f6;
-      --text-muted: #9ca3af;
-      --border: #1f2438;
-      --danger: #ef4444;
-      --danger-glow: rgba(239, 68, 68, 0.35);
-      --success: #22c55e;
-      --success-glow: rgba(34, 197, 94, 0.35);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
-    
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
-    header h1 { color: var(--accent); font-size: 22px; font-weight: 800; text-shadow: 0 0 16px var(--accent-glow); display: flex; align-items: center; gap: 10px; }
-    .stats-bar { display: flex; gap: 10px; }
-    .stat-box { background: var(--card-bg); padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
-    .stat-box span { color: var(--text); font-weight: 700; }
-
-    /* Fixed Navigation Bar */
-    .nav-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-    .tab-btn { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border); padding: 10px 18px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-    .tab-btn.active { background: var(--accent); color: #ffffff; border-color: var(--accent); box-shadow: 0 0 16px var(--accent-glow); }
-    .tab-btn:hover:not(.active) { color: var(--text); border-color: var(--accent); }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* Welcome / Intro Banner */
-    .welcome-card { background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(19,22,34,0.8) 100%); border: 1px solid var(--accent); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
-    .welcome-card h2 { color: var(--text); font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-    .welcome-card p { color: var(--text-muted); font-size: 13px; }
-
-    .grid-container { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-    @media (max-width: 900px) { .grid-container { grid-template-columns: 1fr; } }
-    
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-    .card h2 { font-size: 15px; margin-bottom: 14px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 8px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
-    
-    label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; margin-top: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-    input, textarea { width: 100%; background: var(--card-inner); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; transition: border-color 0.2s; }
-    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
-    textarea { resize: vertical; height: 75px; }
-    
-    button { background: var(--accent); color: #ffffff; border: none; padding: 10px 16px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 12px var(--accent-glow); font-size: 13px; }
-    button:hover { background: var(--accent-hover); }
-
-    /* Player Head & Bot Cards */
-    .bot-card { background: var(--card-inner); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
-    .bot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .bot-identity { display: flex; align-items: center; gap: 10px; }
-    .player-head-img { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--border); background: #000; image-rendering: pixelated; }
-    .bot-status { font-size: 11px; color: var(--success); background: rgba(34,197,94,0.12); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(34,197,94,0.3); font-weight: 600; }
-    
-    .bot-details { font-size: 12px; color: var(--text-muted); display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; background: rgba(255,255,255,0.02); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); }
-    .bot-details b { color: var(--text); }
-    .bot-logs { background: #040507; padding: 8px; border-radius: 6px; font-family: monospace; font-size: 11px; color: var(--text-muted); max-height: 70px; overflow-y: auto; margin-bottom: 10px; border: 1px solid var(--border); }
-    
-    .actions-row { display: flex; gap: 8px; }
-    .btn-danger { background: var(--danger); color: white; width: auto; padding: 6px 12px; font-size: 12px; box-shadow: 0 0 8px var(--danger-glow); }
-    .btn-secondary { background: #374151; color: white; width: auto; padding: 6px 12px; font-size: 12px; box-shadow: none; }
-    .btn-success { background: var(--success); color: white; box-shadow: 0 0 8px var(--success-glow); }
-
-    /* Staff List Tag Styling */
-    .staff-badge { background: var(--card-inner); border: 1px solid var(--border); padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
-
-    /* NameMC / Skin Viewer UI */
-    .generator-box { background: var(--card-inner); border: 1px dashed var(--accent); border-radius: 12px; padding: 24px; text-align: center; margin-top: 10px; }
-    .generated-name-display { font-size: 24px; font-weight: 800; color: var(--accent); margin: 12px 0; text-shadow: 0 0 14px var(--accent-glow); font-family: monospace; }
-    .skin-preview-container { margin: 16px 0; display: flex; justify-content: center; align-items: center; gap: 20px; }
-    .skin-preview-container img.full-skin { height: 140px; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(139,92,246,0.3)); }
-    .skin-preview-container img.head-avatar { width: 56px; height: 56px; image-rendering: pixelated; border-radius: 8px; border: 1px solid var(--border); background: #000; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050505; color: #f3f4f6; overflow-x: hidden; }
+    .glow-text { text-shadow: 0 0 20px rgba(168, 85, 247, 0.6); }
+    .glow-box { box-shadow: 0 0 30px rgba(147, 51, 234, 0.15); border: 1px solid rgba(147, 51, 234, 0.3); }
+    .scroll-section { opacity: 0; transform: translateY(50px); transition: all 1s ease-out; }
+    .scroll-section.visible { opacity: 1; transform: translateY(0); }
+    .pixelated { image-rendering: pixelated; }
   </style>
 </head>
-<body>
+<body class="selection:bg-purple-500 selection:text-white">
 
-  <!-- Header -->
-  <header>
-    <h1>⚡ DARK AFK CLIENT <span style="font-size:12px; color:var(--text-muted); font-weight:normal;">PRO v2.5</span></h1>
-    <div class="stats-bar">
-      <div class="stat-box">RAM: <span id="ram-stat">0%</span></div>
-      <div class="stat-box">CPU: <span id="cpu-stat">0%</span></div>
-    </div>
-  </header>
+  <!-- LANDING / SCROLL PAGE -->
+  <div id="landing-page" class="relative">
+    <section class="h-screen flex flex-col items-center justify-center text-center px-4 scroll-section visible">
+      <div class="inline-block px-4 py-1.5 mb-6 rounded-full bg-purple-950/50 border border-purple-500/30 text-purple-300 text-sm font-semibold tracking-wide animate-pulse">
+        🚀 VERSION 2.5 ULTIMATE AFK SUITE
+      </div>
+      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 glow-text">
+        Minecraft <span class="text-purple-500">Dark AFK</span> Client
+      </h1>
+      <p class="max-w-2xl text-lg md:text-xl text-gray-400 mb-10 leading-relaxed">
+        AFK your Minecraft accounts safely while you sleep. Features automated proxy health checks, anti-staff radar, 20h 10m target completion, and chat command integration.
+      </p>
+      <button onclick="enterConsole()" class="px-8 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-lg text-white shadow-lg shadow-purple-600/30 transition-all transform hover:scale-105">
+        Enter Dashboard Console ⚡
+      </button>
+    </section>
 
-  <!-- Welcome Introduction -->
-  <div class="welcome-card">
-    <h2>🎮 Welcome to Dark AFK Control Center</h2>
-    <p>Manage headless Minecraft AFK instances, inspect live NameMC player skins & head avatars, and monitor staff evasion triggers.</p>
+    <footer class="py-10 text-center text-gray-600 border-t border-zinc-900">
+      <p>Copyright 2026 By Ryuk. All Rights Reserved.</p>
+    </footer>
   </div>
 
-  <!-- Navigation Tabs -->
-  <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('consoleTab', this)">🎮 Console Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('generatorTab', this)">✨ NameMC & Skins</button>
-    <button class="tab-btn" onclick="switchTab('staffTab', this)">🛡️ Staff Evasion</button>
-    <button class="tab-btn" onclick="switchTab('logsTab', this)">📊 AFK Archives & Logs</button>
-  </div>
-
-  <!-- TAB 1: CONSOLE DASHBOARD -->
-  <div id="consoleTab" class="tab-content active">
-    <div class="grid-container">
+  <!-- DASHBOARD CONSOLE -->
+  <div id="dashboard-console" class="hidden min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
+    <header class="flex justify-between items-center mb-8 pb-4 border-b border-zinc-800">
       <div>
-        <div class="card">
-          <h2>Deploy Bots</h2>
-          <label>Server IP:Port</label>
-          <input type="text" id="server-ip" placeholder="gamester.org:25565">
-          
-          <label>Usernames (Comma Separated)</label>
-          <textarea id="usernames" placeholder="BotOne, BotTwo, BotThree"></textarea>
-          
-          <label>Server Password (AuthMe)</label>
-          <input type="password" id="password" placeholder="Optional password">
-          
-          <label>Proxies (SOCKS5 / IP:Port)</label>
-          <textarea id="proxies" placeholder="192.168.1.50:1080&#10;192.168.1.51:1080"></textarea>
-          
-          <button onclick="deployBots()" style="width:100%; margin-top: 6px;">🚀 Launch Bots</button>
-        </div>
+        <h1 class="text-2xl font-extrabold glow-text">⚡ Dark AFK Console</h1>
+        <p class="text-sm text-gray-400">Real-time Bot Management, Staff Tracking & Proxy Recovery</p>
+      </div>
+      <button onclick="exitConsole()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold">← Back to Home</button>
+    </header>
+
+    <!-- Controls / Deploy Grid -->
+    <div class="grid lg:grid-cols-3 gap-6 mb-8">
+      <!-- Deploy Form -->
+      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box lg:col-span-2">
+        <h2 class="text-lg font-bold mb-4 text-purple-400">🚀 Deploy New Bots</h2>
+        <form id="deploy-form" class="space-y-4">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">Server IP:Port</label>
+              <input type="text" id="serverIP" required placeholder="gamester.org:25565" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-400 mb-1">AuthMe Password (Optional)</label>
+              <input type="password" id="password" placeholder="Password for login" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Usernames (Comma Separated)</label>
+            <textarea id="usernamesRaw" required rows="2" placeholder="Bot1, Bot2, Bot3, Bot4" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 mb-1">Proxies (Comma Separated - 1 Proxy supports max 4 bots)</label>
+            <textarea id="proxiesRaw" rows="2" placeholder="ip:port@user:pass, ip:port" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none"></textarea>
+          </div>
+          <button type="submit" class="w-full py-3 bg-purple-600 hover:bg-purple-500 font-bold rounded-lg transition-all shadow-lg shadow-purple-600/20">Deploy Bots Now</button>
+        </form>
+        <div id="deploy-msg" class="mt-3 text-sm font-semibold"></div>
       </div>
 
-      <div>
-        <div class="card">
-          <h2>Active Bots (<span id="active-count">0</span>)</h2>
-          <div id="active-bots-container">
-            <p style="color: var(--text-muted); font-size: 13px;">No active bots running.</p>
+      <!-- Staff Manager Panel with Player Heads -->
+      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box flex flex-col justify-between">
+        <div>
+          <h2 class="text-lg font-bold mb-2 text-purple-400">🛡️ Staff Evasion Radar</h2>
+          <p class="text-xs text-gray-400 mb-4">Bots auto-disconnect for 15s if staff is detected.</p>
+          <div class="flex gap-2 mb-4">
+            <input type="text" id="staffInput" placeholder="Staff username" class="w-full bg-black border border-zinc-800 rounded-lg p-2.5 text-sm focus:border-purple-500 outline-none">
+            <button onclick="addStaff()" class="px-4 bg-purple-600 hover:bg-purple-500 font-bold rounded-lg text-sm whitespace-nowrap">Add Staff</button>
           </div>
         </div>
 
-        <div class="card" style="border-color: rgba(239,68,68,0.3);">
-          <h2>⚠️ Proxy-Down Recovery (<span id="proxy-down-count">0</span>)</h2>
-          <div id="proxy-down-container">
-            <p style="color: var(--text-muted); font-size: 13px;">No proxy dropouts detected.</p>
-          </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Monitored Staff List:</label>
+          <div id="staff-list-container" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- TAB 2: NAMEMC & SKIN VIEWER -->
-  <div id="generatorTab" class="tab-content">
-    <div class="card" style="max-width: 600px; margin: 0 auto;">
-      <h2>✨ NameMC Player & Skin Search</h2>
-      
-      <div style="display:flex; gap:8px; margin-bottom:12px;">
-        <input type="text" id="search-username" placeholder="Search any Minecraft username..." style="margin-bottom:0;">
-        <button onclick="searchNameMC()" style="width: auto;">Search</button>
-      </div>
-
-      <div class="generator-box">
-        <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 1px;">NAMEMC PROFILE</div>
-        <div class="generated-name-display" id="generatedNameBox">Scythe</div>
-        
-        <div class="skin-preview-container" id="skinPreviewBox">
-          <img class="head-avatar" src="https://mc-heads.net/avatar/Scythe/64" alt="Head Avatar">
-          <img class="full-skin" src="https://mc-heads.net/body/Scythe/140" alt="Full Skin Render">
-        </div>
-
-        <div id="namemcLinkContainer" style="margin-bottom: 16px;">
-          <a href="https://namemc.com/search?q=Scythe" target="_blank" style="color: var(--accent); font-size: 13px; text-decoration: underline;">🔗 View Scythe on NameMC.com</a>
-        </div>
-        
-        <button onclick="randomNameMC()" style="width: 100%;">Fetch Random NameMC Profile</button>
-      </div>
+    <!-- NAVIGATION TABS -->
+    <div class="flex flex-wrap gap-3 mb-6 border-b border-zinc-800 pb-4">
+      <button onclick="switchTab('active')" id="btn-active" class="px-5 py-2.5 rounded-xl font-bold bg-purple-600 text-white transition-all text-sm">🟢 Active AFK (<span id="count-active">0</span>)</button>
+      <button onclick="switchTab('successafk')" id="btn-successafk" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">🎉 Successfully AFKs (20h 10m) (<span id="count-successafk">0</span>)</button>
+      <button onclick="switchTab('proxydown')" id="btn-proxydown" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">⚠️ Proxy Down Section (<span id="count-proxydown">0</span>)</button>
+      <button onclick="switchTab('banned')" id="btn-banned" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">🚫 Banned Bots (<span id="count-banned">0</span>)</button>
     </div>
-  </div>
 
-  <!-- TAB 3: STAFF EVASION -->
-  <div id="staffTab" class="tab-content">
-    <div class="card" style="max-width: 600px; margin: 0 auto;">
-      <h2>🛡️ Staff Evasion & Player Head Tracking</h2>
-      <label>Add Staff Username to Monitor</label>
-      <div style="display:flex; gap:8px; margin-bottom: 16px;">
-        <input type="text" id="new-staff" placeholder="StaffUsername" style="margin-bottom:0;">
-        <button onclick="addStaff()" style="width: auto;">Add Staff</button>
-      </div>
-      <label>Monitored Staff List (With Player Heads):</label>
-      <div id="staff-list" style="margin-top:12px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
-    </div>
-  </div>
+    <!-- TAB 1: ACTIVE BOTS -->
+    <div id="tab-active" class="tab-content grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-  <!-- TAB 4: LOGS & ARCHIVES -->
-  <div id="logsTab" class="tab-content">
-    <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
-      <div class="card" style="border-color: rgba(34,197,94,0.3);">
-        <h2>🎉 Completed 20h 2m AFK (<span id="success-count">0</span>)</h2>
-        <div id="success-bots-container">
-          <p style="color: var(--text-muted); font-size: 13px;">No completed sessions yet.</p>
+    <!-- TAB 2: SUCCESSFULLY AFK BOTS (20h 10m) -->
+    <div id="tab-successafk" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <!-- TAB 3: PROXY DOWN SECTION -->
+    <div id="tab-proxydown" class="tab-content hidden space-y-6">
+      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box flex flex-col md:flex-row gap-4 items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg text-yellow-400">Proxy Recovery Tool</h3>
+          <p class="text-xs text-gray-400">Select disconnected bots, enter a new proxy, and revive them instantly preserving saved uptime and credentials!</p>
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+          <input type="text" id="recoveryProxyInput" placeholder="New Proxy (ip:port@user:pass)" class="bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none w-full md:w-80">
+          <button onclick="recoverSelectedBots()" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold rounded-lg text-sm whitespace-nowrap">Revive Selected (Max 4)</button>
         </div>
       </div>
-
-      <div class="card" style="border-color: rgba(239,68,68,0.3);">
-        <h2>🚫 Banned Log (<span id="banned-count">0</span>)</h2>
-        <div id="banned-bots-container">
-          <p style="color: var(--text-muted); font-size: 13px;">No banned bots recorded.</p>
-        </div>
-      </div>
+      <div id="proxydown-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
+
+    <!-- TAB 4: BANNED BOTS -->
+    <div id="tab-banned" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
   </div>
 
   <script>
     const socket = io();
 
-    function switchTab(tabId, btnElement) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      btnElement.classList.add('active');
+    function enterConsole() {
+      document.getElementById('landing-page').classList.add('hidden');
+      document.getElementById('dashboard-console').classList.remove('hidden');
     }
 
-    function deployBots() {
-      const serverIP = document.getElementById('server-ip').value.trim();
-      const usernamesRaw = document.getElementById('usernames').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const proxiesRaw = document.getElementById('proxies').value.trim();
+    function exitConsole() {
+      document.getElementById('dashboard-console').classList.add('hidden');
+      document.getElementById('landing-page').classList.remove('hidden');
+    }
 
-      if (!serverIP || !usernamesRaw) {
-        alert('Please fill in Server IP and Usernames!');
-        return;
-      }
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('[id^="btn-"]').forEach(el => { el.className = 'px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm'; });
+      
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`btn-${tab}`).className = 'px-5 py-2.5 rounded-xl font-bold bg-purple-600 text-white transition-all text-sm';
+    }
+
+    // Deploy Form Handler
+    document.getElementById('deploy-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const serverIP = document.getElementById('serverIP').value;
+      const password = document.getElementById('password').value;
+      const usernamesRaw = document.getElementById('usernamesRaw').value;
+      const proxiesRaw = document.getElementById('proxiesRaw').value;
 
       socket.emit('deploy_bots', { serverIP, usernamesRaw, password, proxiesRaw });
-    }
-
-    function randomNameMC() {
-      socket.emit('fetch_namemc_profile', '');
-    }
-
-    function searchNameMC() {
-      const query = document.getElementById('search-username').value;
-      if (query) socket.emit('fetch_namemc_profile', query);
-    }
-
-    socket.on('namemc_profile_result', data => {
-      document.getElementById('generatedNameBox').innerText = data.name;
-      document.getElementById('skinPreviewBox').innerHTML = `
-        <img class="head-avatar" src="${data.head}" alt="Head">
-        <img class="full-skin" src="${data.render}" alt="Skin">
-      `;
-      document.getElementById('namemcLinkContainer').innerHTML = `<a href="${data.url}" target="_blank" style="color: var(--accent); font-size: 13px; text-decoration: underline;">🔗 View ${data.name} on NameMC.com</a>`;
     });
 
-    socket.on('deploy_success', msg => alert(msg));
-    socket.on('deploy_error', err => alert(err));
-
-    socket.on('dashboard_update', data => {
-      document.getElementById('ram-stat').innerText = data.system.ramUsage + '%';
-      document.getElementById('cpu-stat').innerText = data.system.cpuLoad + '%';
-      document.getElementById('active-count').innerText = data.active.length;
-      document.getElementById('proxy-down-count').innerText = data.proxyDown.length;
-      document.getElementById('success-count').innerText = data.successAfk.length;
-      document.getElementById('banned-count').innerText = data.banned.length;
-
-      // Render Staff List with Live Player Heads
-      document.getElementById('staff-list').innerHTML = data.staff.map(s => 
-        `<div class="staff-badge">
-          <img class="player-head-img" src="${s.head}" alt="Staff Head">
-          <span>${s.name}</span>
-          <button onclick="removeStaff('${s.name}')" class="btn-danger" style="padding:2px 6px; font-size:10px;">X</button>
-        </div>`
-      ).join('');
-
-      // Render Active Bots with Player Heads
-      const activeContainer = document.getElementById('active-bots-container');
-      if (data.active.length === 0) {
-        activeContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No active bots running.</p>';
-      } else {
-        activeContainer.innerHTML = data.active.map(b => `
-          <div class="bot-card">
-            <div class="bot-header">
-              <div class="bot-identity">
-                <img class="player-head-img" src="${b.head}" alt="Head">
-                <div>
-                  <div style="font-weight:700; font-size:14px;">${b.username}</div>
-                  <div style="font-size:11px; color:var(--text-muted);">${b.server}</div>
-                </div>
-              </div>
-              <span class="bot-status">${b.status}</span>
-            </div>
-            <div class="bot-details">
-              <div>Skin: <b>${b.skin}</b></div>
-              <div>Uptime: <b>${b.uptime}</b></div>
-              <div>Pos: ${b.pos}</div>
-              <div>Ping: ${b.ping}ms</div>
-            </div>
-            <div class="bot-logs">${b.logs.join('<br>')}</div>
-            <div class="actions-row">
-              <input type="text" id="chat_${b.id}" placeholder="Type message/command..." style="margin-bottom:0; font-size:12px; padding:6px;">
-              <button class="btn-secondary" onclick="sendChat('${b.id}')">Send</button>
-              <button class="btn-danger" onclick="stopBot('${b.id}')">Stop</button>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Render Proxy Down Section
-      const proxyContainer = document.getElementById('proxy-down-container');
-      if (data.proxyDown.length === 0) {
-        proxyContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No proxy dropouts detected.</p>';
-      } else {
-        proxyContainer.innerHTML = data.proxyDown.map(b => `
-          <div class="bot-card" style="border-color: rgba(239,68,68,0.4);">
-            <div class="bot-header">
-              <div class="bot-identity">
-                <img class="player-head-img" src="${b.head}" alt="Head">
-                <div>
-                  <div style="font-weight:700; font-size:14px;">${b.username}</div>
-                  <div style="font-size:11px; color:var(--text-muted);">${b.server}</div>
-                </div>
-              </div>
-              <span style="color:var(--danger); font-size:12px; font-weight:700;">Proxy Dead</span>
-            </div>
-            <div class="bot-details">
-              <div>Skin: ${b.skin}</div>
-              <div>Uptime Saved: ${b.uptime}</div>
-            </div>
-            <button class="btn-success" onclick="reviveBot('${b.id}')" style="font-size:12px; padding:6px; width:100%;">Revive Bot with New Proxy</button>
-          </div>
-        `).join('');
-      }
-
-      // Render Completed 20h 2m Archive
-      const successContainer = document.getElementById('success-bots-container');
-      if (data.successAfk.length === 0) {
-        successContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 13px;">No completed sessions yet.</p>';
-      } else {
-        successContainer.innerHTML = data.successAfk.map(b => `
-          <div class="bot-card" style="border-color: rgba(34,197,94,0.4);">
-            <div class="bot-header">
-              <div class="bot-identity">
-                <img class="player-head-img" src="${b.head}" alt="Head">
-                <span style="color: var(--success); font-weight:700;">${b.username}</span>
-              </div>
-              <span style="font-size:11px; color:var(--text-muted);">${b.completedAt}</span>
-            </div>
-            <div class="bot-details">
-              <div>Server: ${b.server}</div>
-              <div>Skin: ${b.skin}</div>
-              <div>Total Uptime: <b>${b.uptime}</b></div>
-              <div>Pass: ${b.password || 'None'}</div>
-            </div>
-          </div>
-        `).join('');
-      }
+    socket.on('deploy_success', (msg) => {
+      const msgEl = document.getElementById('deploy-msg');
+      msgEl.className = 'mt-3 text-sm font-semibold text-green-400';
+      msgEl.innerText = msg;
+      setTimeout(() => msgEl.innerText = '', 5000);
     });
 
-    function sendChat(id) {
-      const msg = document.getElementById('chat_' + id).value;
-      if (msg) socket.emit('bot_chat', { id, message: msg });
-      document.getElementById('chat_' + id).value = '';
-    }
-
-    function stopBot(id) {
-      socket.emit('stop_bot', id);
-    }
-
-    function reviveBot(id) {
-      const newProxy = prompt('Enter new SOCKS5 proxy IP:Port:');
-      if (newProxy) socket.emit('recover_proxy_down', { botIds: [id], newProxy });
-    }
+    socket.on('deploy_error', (err) => {
+      const msgEl = document.getElementById('deploy-msg');
+      msgEl.className = 'mt-3 text-sm font-semibold text-red-400';
+      msgEl.innerText = err;
+    });
 
     function addStaff() {
-      const name = document.getElementById('new-staff').value;
-      if (name) {
-        socket.emit('add_staff', name);
-        document.getElementById('new-staff').value = '';
+      const val = document.getElementById('staffInput').value;
+      if (val) {
+        socket.emit('add_staff', val);
+        document.getElementById('staffInput').value = '';
       }
     }
 
     function removeStaff(name) {
       socket.emit('remove_staff', name);
     }
-  </script>
-</body>
-</html>
+
+    function stopBot(id) {
+      socket.emit('stop_bot', id);
+    }
+
+    function sendChat(id) {
+      const input = document.getElementById(`chat_${id}`);
+      if (input && input.value.trim()) {
+        socket.emit('bot_chat', { id, message: input.value.trim() });
+        input.value = '';
+      }
+    }
+
+    // Realtime Dashboard Data Renderer
+    socket.on('dashboard_update', (data) => {
+      document.getElementById('count-active').innerText = data.active.length;
+      document.getElementById('count-successafk').innerText = data.successAfk.length;
+      document.getElementById('count-proxydown').innerText = data.proxyDown.length;
+      document.getElementById('count-banned').innerText = data.banned.length;
+
+      // Render Staff List Navigation
+      const staffContainer = document.getElementById('staff-list-container');
+      if (!data.staffList || data.staffList.length === 0) {
+        staffContainer.innerHTML = '<p class="text-xs text-gray-500">No staff members listed.</p>';
+      } else {
+        staffContainer.innerHTML = data.staffList.map(s => `
+          <div class="flex items-center justify-between bg-black/50 p-2 rounded-lg border border-zinc-800 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-purple-400">${s.num}.</span>
+              <img src="${s.headUrl}" alt="${s.name}" class="w-6 h-6 rounded pixelated bg-zinc-800" onerror="this.src='https://mc-heads.net/avatar/steve/28'">
+              <span class="font-semibold text-gray-200">${s.name}</span>
+            </div>
+            <button onclick="removeStaff('${s.name}')" class="text-red-400 hover:text-red-300 font-bold text-xs px-2 py-0.5 bg-red-950/40 hover:bg-red-900/60 rounded border border-red-800/50">Remove</button>
+          </div>
+        `).join('');
+      }
+
+      // Render Active Bots with Commands Input
+      const activeContainer = document.getElementById('tab-active');
+      if (data.active.length === 0) {
+        activeContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No active bots running right now. Deploy some above!</div>`;
+      } else {
+        activeContainer.innerHTML = data.active.map(b => `
+          <div class="bg-zinc-900/60 border border-zinc-800 p-5 rounded-2xl glow-box flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <div class="flex items-center gap-2">
+                  <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-zinc-700 bg-black">
+                  <div>
+                    <h3 class="font-extrabold text-base text-purple-300">${b.username}</h3>
+                    <p class="text-[10px] text-gray-500">Pass: ${b.password}</p>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-950 text-green-400 border border-green-800">ONLINE</span>
+              </div>
+              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
+              <p class="text-xs text-gray-400 mb-1">Status: <span class="text-purple-400">${b.status}</span></p>
+              <p class="text-xs text-gray-400 mb-1">Uptime: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
+              <p class="text-xs text-gray-400 mb-1">Health / Ping: ❤️ ${b.health} | 🏓 ${b.ping}</p>
+              <p class="text-xs text-gray-400 mb-3">Pos: ${b.pos} | Drops: <span class="text-yellow-400">${b.drops}/25</span></p>
+              
+              <div class="bg-black/60 p-3 rounded-xl font-mono text-[11px] text-gray-300 mb-3 h-20 overflow-y-auto border border-zinc-800">
+                ${b.logs.join('<br>')}
+              </div>
+
+              <!-- Chat / Command System -->
+              <div class="flex gap-2 mb-4">
+                <input type="text" id="chat_${b.id}" placeholder="Send command or chat..." class="w-full bg-black border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-purple-500" onkeypress="if(event.key==='Enter') sendChat('${b.id}')">
+                <button onclick="sendChat('${b.id}')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg whitespace-nowrap">Send</button>
+              </div>
+            </div>
+            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 rounded-lg text-xs font-bold transition-all">Stop Bot</button>
+          </div>
+        `).join('');
+      }
+
+      // Render Successfully AFK Section
+      const successContainer = document.getElementById('tab-successafk');
+      if (data.successAfk.length === 0) {
+        successContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No completed 20h 10m sessions yet.</div>`;
+      } else {
+        successContainer.innerHTML = data.successAfk.map(b => `
+          <div class="bg-zinc-900/60 border border-green-900/40 p-5 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-green-700 bg-black">
+                <div>
+                  <h3 class="font-extrabold text-base text-green-400">${b.username}</h3>
+                  <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
+                </div>
+              </div>
+              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
+              <p class="text-xs text-gray-400 mb-1">Total AFK Time: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
+              <p class="text-xs text-gray-500 mb-3">Completed At: ${b.completedAt}</p>
+            </div>
+            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-xs font-bold transition-all">Clear Entry</button>
+          </div>
+        `).join('');
+      }
+
+      // Render Proxy Down Section
+      const proxyDownContainer = document.getElementById('proxydown-grid');
+      if (data.proxyDown.length === 0) {
+        proxyDownContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No bots currently down due to proxies.</div>`;
+      } else {
+        proxyDownContainer.innerHTML = data.proxyDown.map(b => `
+          <div class="bg-zinc-900/60 border border-yellow-900/40 p-5 rounded-2xl flex flex-col justify-between">
+            <div>
+              <div class="flex items-center gap-3 mb-3">
+                <input type="checkbox" value="${b.id}" class="proxy-checkbox w-4 h-4 accent-purple-600 cursor-pointer">
+                <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-yellow-700 bg-black">
+                <div>
+                  <h3 class="font-extrabold text-base text-yellow-400">${b.username}</h3>
+                  <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
+                </div>
+              </div>
+              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
+              <p class="text-xs text-gray-400 mb-1">Saved Uptime: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
+              <p class="text-xs text-gray-500 mb-3">Failed At: ${b.failedAt}</p>
+            </div>
+            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-xs font-bold transition-all">Remove from List</button>
+          </div>
+        `).join('');
+      }
+
+      // Render Banned Bots
+      const bannedContainer = document.getElementById('tab-banned');
+      if (data.banned.length === 0) {
+        bannedContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No bans recorded.</div>`;
+      } else {
+        bannedContainer.innerHTML = data.banned.map(b => `
+          <div class="bg-zinc-900/60 border border-red-900/40 p-5 rounded-2xl">
+            <div class="flex items-center gap-3 mb-3">
+              <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-red-700 bg-black">
+              <div>
+                <h3 class="font-extrabold text-base text-red-400">${b.username}</h3>
+                <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
+              </div>
+            </div>
+            <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
+            <p class="text-xs text-gray-400 mb-1">Ban Reason: <span class="text-white font-semibold">${b.reason}</span></p>
+            <p class="text-xs text-gray-400 mb-1">Uptime before Ban: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
+            <p class="text-xs text-gray-500">Banned At: ${b.time}</p>
+          </div>
+        `).join('');
+      }
+    });
+
+    function recoverSelectedBot
