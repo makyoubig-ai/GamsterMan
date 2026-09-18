@@ -3,336 +3,420 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Dark AFK Client Pro</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Dark AFK Client Pro</title>
   <script src="/socket.io/socket.io.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050505; color: #f3f4f6; overflow-x: hidden; }
-    .glow-text { text-shadow: 0 0 20px rgba(168, 85, 247, 0.6); }
-    .glow-box { box-shadow: 0 0 30px rgba(147, 51, 234, 0.15); border: 1px solid rgba(147, 51, 234, 0.3); }
-    .scroll-section { opacity: 0; transform: translateY(50px); transition: all 1s ease-out; }
-    .scroll-section.visible { opacity: 1; transform: translateY(0); }
-    .pixelated { image-rendering: pixelated; }
+    :root {
+      --bg-primary: #0a0c10;
+      --bg-secondary: #12161f;
+      --bg-card: #1a202c;
+      --border-color: #2d3748;
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --danger-color: #ef4444;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+    /* LANDING SCREEN */
+    #landing-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: radial-gradient(circle at center, #1e1b4b 0%, #0a0c10 70%);
+      text-align: center;
+      padding: 20px;
+    }
+    #landing-screen h1 { font-size: 3rem; margin-bottom: 10px; color: #fff; text-shadow: 0 0 20px rgba(99, 102, 241, 0.5); }
+    #landing-screen p { color: var(--text-muted); font-size: 1.2rem; margin-bottom: 30px; }
+    .btn-enter {
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+      transition: all 0.3s ease;
+    }
+    .btn-enter:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6); }
+
+    /* DASHBOARD SCREEN */
+    #dashboard-screen { display: none; padding: 25px; max-width: 1400px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+    header h2 { font-size: 1.8rem; display: flex; align-items: center; gap: 10px; }
+
+    .grid-container { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+    @media (max-width: 992px) { .grid-container { grid-template-columns: 1fr; } }
+
+    .card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: #e2e8f0; }
+
+    /* FORM STYLES */
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; }
+    .form-control { width: 100%; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; color: #fff; font-size: 0.9rem; }
+    .form-control:focus { outline: none; border-color: var(--accent-color); }
+    textarea.form-control { resize: vertical; min-height: 70px; }
+
+    .btn { padding: 10px 16px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-primary { background: var(--accent-color); color: white; width: 100%; justify-content: center; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { background: var(--danger-color); color: white; }
+    .btn-warning { background: var(--warning-color); color: #000; }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+    /* TABLES */
+    .table-responsive { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+    th { background: var(--bg-card); color: var(--text-muted); font-weight: 600; padding: 12px; border-bottom: 1px solid var(--border-color); }
+    td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; display: inline-block; }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+
+    /* LOGS BOX */
+    .log-box { background: var(--bg-primary); padding: 8px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; max-height: 80px; overflow-y: auto; border: 1px solid var(--border-color); color: #a0aec0; }
+
+    /* STAFF AVATARS */
+    .staff-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .staff-chip { background: var(--bg-card); padding: 6px 12px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); font-size: 0.85rem; }
+    .staff-chip img { width: 22px; height: 22px; border-radius: 4px; }
+    .staff-chip .remove-staff { color: var(--danger-color); cursor: pointer; margin-left: 4px; }
+
+    .alert { padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; display: none; }
+    .alert-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger-color); color: #fca5a5; }
+    .alert-success { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--success-color); color: #6ee7b7; }
   </style>
 </head>
-<body class="selection:bg-purple-500 selection:text-white">
+<body>
 
-  <!-- LANDING / SCROLL PAGE -->
-  <div id="landing-page" class="relative">
-    <section class="h-screen flex flex-col items-center justify-center text-center px-4 scroll-section visible">
-      <div class="inline-block px-4 py-1.5 mb-6 rounded-full bg-purple-950/50 border border-purple-500/30 text-purple-300 text-sm font-semibold tracking-wide animate-pulse">
-        🚀 VERSION 2.5 ULTIMATE AFK SUITE
-      </div>
-      <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 glow-text">
-        Minecraft <span class="text-purple-500">Dark AFK</span> Client
-      </h1>
-      <p class="max-w-2xl text-lg md:text-xl text-gray-400 mb-10 leading-relaxed">
-        AFK your Minecraft accounts safely while you sleep. Features automated proxy health checks, anti-staff radar, 20h 10m target completion, and chat command integration.
-      </p>
-      <button onclick="enterConsole()" class="px-8 py-4 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-lg text-white shadow-lg shadow-purple-600/30 transition-all transform hover:scale-105">
-        Enter Dashboard Console ⚡
-      </button>
-    </section>
-
-    <footer class="py-10 text-center text-gray-600 border-t border-zinc-900">
-      <p>Copyright 2026 By Ryuk. All Rights Reserved.</p>
-    </footer>
+  <!-- LANDING PAGE -->
+  <div id="landing-screen">
+    <h1><i class="fa-solid font-awesome-flag"></i> Dark AFK Client Pro</h1>
+    <p>Automated Minecraft Bot Manager & Proxy Rotator</p>
+    <button id="enter-btn" class="btn-enter"><i class="fa-solid fa-right-to-bracket"></i> Enter Dashboard</button>
   </div>
 
-  <!-- DASHBOARD CONSOLE -->
-  <div id="dashboard-console" class="hidden min-h-screen p-4 md:p-8 max-w-7xl mx-auto">
-    <header class="flex justify-between items-center mb-8 pb-4 border-b border-zinc-800">
-      <div>
-        <h1 class="text-2xl font-extrabold glow-text">⚡ Dark AFK Console</h1>
-        <p class="text-sm text-gray-400">Real-time Bot Management, Staff Tracking & Proxy Recovery</p>
-      </div>
-      <button onclick="exitConsole()" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold">← Back to Home</button>
+  <!-- MAIN DASHBOARD -->
+  <div id="dashboard-screen">
+    <header>
+      <h2><i class="fa-solid fa-ghost" style="color: var(--accent-color);"></i> Dark AFK Control Center</h2>
+      <button class="btn btn-danger btn-sm" onclick="location.reload()"><i class="fa-solid fa-power-off"></i> Disconnect Session</button>
     </header>
 
-    <!-- Controls / Deploy Grid -->
-    <div class="grid lg:grid-cols-3 gap-6 mb-8">
-      <!-- Deploy Form -->
-      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box lg:col-span-2">
-        <h2 class="text-lg font-bold mb-4 text-purple-400">🚀 Deploy New Bots</h2>
-        <form id="deploy-form" class="space-y-4">
-          <div class="grid md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Server IP:Port</label>
-              <input type="text" id="serverIP" required placeholder="gamester.org:25565" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none">
+    <div id="alert-error" class="alert alert-danger"></div>
+    <div id="alert-success" class="alert alert-success"></div>
+
+    <div class="grid-container">
+      <!-- SIDEBAR: DEPLOY FORM & STAFF -->
+      <div class="sidebar">
+        <!-- DEPLOYMENT CARD -->
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-rocket"></i> Deploy Bots</div>
+          <form id="deploy-form">
+            <div class="form-group">
+              <label>Server Host:Port</label>
+              <input type="text" id="deploy-server" class="form-control" placeholder="gamester.org:25565" required>
             </div>
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">AuthMe Password (Optional)</label>
-              <input type="password" id="password" placeholder="Password for login" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none">
+            <div class="form-group">
+              <label>Usernames (comma-separated)</label>
+              <textarea id="deploy-usernames" class="form-control" placeholder="Bot1, Bot2, Bot3" required></textarea>
+            </div>
+            <div class="form-group">
+              <label>AuthMe Password</label>
+              <input type="text" id="deploy-password" class="form-control" placeholder="SecretPassword123">
+            </div>
+            <div class="form-group">
+              <label>SOCKS5 Proxies (1 Proxy per 4 Bots)</label>
+              <textarea id="deploy-proxies" class="form-control" placeholder="ip:port or ip:port:user:pass"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-play"></i> Start Bot Fleet</button>
+          </form>
+        </div>
+
+        <!-- STAFF EVASION MANAGEMENT -->
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-user-shield"></i> Staff Evasion Manager</div>
+          <div class="form-group">
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="staff-name-input" class="form-control" placeholder="Staff Username">
+              <button class="btn btn-primary" id="add-staff-btn" style="width: auto;"><i class="fa-solid fa-plus"></i></button>
             </div>
           </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Usernames (Comma Separated)</label>
-            <textarea id="usernamesRaw" required rows="2" placeholder="Bot1, Bot2, Bot3, Bot4" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none"></textarea>
+          <div class="staff-grid" id="staff-list-container">
+            <!-- Staff chips load here -->
           </div>
-          <div>
-            <label class="block text-xs text-gray-400 mb-1">Proxies (Comma Separated - 1 Proxy supports max 4 bots)</label>
-            <textarea id="proxiesRaw" rows="2" placeholder="ip:port@user:pass, ip:port" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none"></textarea>
-          </div>
-          <button type="submit" class="w-full py-3 bg-purple-600 hover:bg-purple-500 font-bold rounded-lg transition-all shadow-lg shadow-purple-600/20">Deploy Bots Now</button>
-        </form>
-        <div id="deploy-msg" class="mt-3 text-sm font-semibold"></div>
+        </div>
       </div>
 
-      <!-- Staff Manager Panel with Player Heads -->
-      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box flex flex-col justify-between">
-        <div>
-          <h2 class="text-lg font-bold mb-2 text-purple-400">🛡️ Staff Evasion Radar</h2>
-          <p class="text-xs text-gray-400 mb-4">Bots auto-disconnect for 15s if staff is detected.</p>
-          <div class="flex gap-2 mb-4">
-            <input type="text" id="staffInput" placeholder="Staff username" class="w-full bg-black border border-zinc-800 rounded-lg p-2.5 text-sm focus:border-purple-500 outline-none">
-            <button onclick="addStaff()" class="px-4 bg-purple-600 hover:bg-purple-500 font-bold rounded-lg text-sm whitespace-nowrap">Add Staff</button>
+      <!-- MAIN CONTENT: TABLES -->
+      <div class="main-content">
+        <!-- ACTIVE BOTS TABLE -->
+        <div class="card">
+          <div class="card-title"><i class="fa-solid fa-robot"></i> Active Bots</div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Status</th>
+                  <th>Ping</th>
+                  <th>Uptime</th>
+                  <th>Position</th>
+                  <th>Recent Logs</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="active-bots-body">
+                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No active bots connected.</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-gray-400 mb-2 uppercase">Monitored Staff List:</label>
-          <div id="staff-list-container" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        <!-- PROXY DOWN / RECOVERY SECTION -->
+        <div class="card">
+          <div class="card-title" style="color: var(--warning-color);"><i class="fa-solid fa-triangle-exclamation"></i> Proxy Down Bots (Awaiting New Proxy)</div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Select</th>
+                  <th>Username</th>
+                  <th>Server</th>
+                  <th>Saved Uptime</th>
+                  <th>Failed At</th>
+                </tr>
+              </thead>
+              <tbody id="proxy-down-body">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No proxy failures reported.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="recovery-proxy-input" class="form-control" placeholder="Enter new SOCKS5 proxy (ip:port or ip:port:user:pass)" style="flex: 1;">
+            <button class="btn btn-warning" id="revive-btn"><i class="fa-solid fa-wrench"></i> Revive Selected</button>
+          </div>
+        </div>
+
+        <!-- SUCCESSFUL 20H 10M AFK COMPLETED -->
+        <div class="card">
+          <div class="card-title" style="color: var(--success-color);"><i class="fa-solid fa-trophy"></i> Target AFK Completed (20h 10m)</div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Server</th>
+                  <th>Total Uptime</th>
+                  <th>Completed At</th>
+                </tr>
+              </thead>
+              <tbody id="success-afk-body">
+                <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No bots have completed the target cycle yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BANNED BOTS ARCHIVE -->
+        <div class="card">
+          <div class="card-title" style="color: var(--danger-color);"><i class="fa-solid fa-ban"></i> Banned Accounts Log</div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Server</th>
+                  <th>Ban Reason</th>
+                  <th>Recorded Uptime</th>
+                  <th>Time Banned</th>
+                </tr>
+              </thead>
+              <tbody id="banned-bots-body">
+                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No banned accounts recorded.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- NAVIGATION TABS -->
-    <div class="flex flex-wrap gap-3 mb-6 border-b border-zinc-800 pb-4">
-      <button onclick="switchTab('active')" id="btn-active" class="px-5 py-2.5 rounded-xl font-bold bg-purple-600 text-white transition-all text-sm">🟢 Active AFK (<span id="count-active">0</span>)</button>
-      <button onclick="switchTab('successafk')" id="btn-successafk" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">🎉 Successfully AFKs (20h 10m) (<span id="count-successafk">0</span>)</button>
-      <button onclick="switchTab('proxydown')" id="btn-proxydown" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">⚠️ Proxy Down Section (<span id="count-proxydown">0</span>)</button>
-      <button onclick="switchTab('banned')" id="btn-banned" class="px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm">🚫 Banned Bots (<span id="count-banned">0</span>)</button>
-    </div>
-
-    <!-- TAB 1: ACTIVE BOTS -->
-    <div id="tab-active" class="tab-content grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- TAB 2: SUCCESSFULLY AFK BOTS (20h 10m) -->
-    <div id="tab-successafk" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- TAB 3: PROXY DOWN SECTION -->
-    <div id="tab-proxydown" class="tab-content hidden space-y-6">
-      <div class="bg-zinc-900/60 p-6 rounded-2xl glow-box flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div>
-          <h3 class="font-bold text-lg text-yellow-400">Proxy Recovery Tool</h3>
-          <p class="text-xs text-gray-400">Select disconnected bots, enter a new proxy, and revive them instantly preserving saved uptime and credentials!</p>
-        </div>
-        <div class="flex gap-2 w-full md:w-auto">
-          <input type="text" id="recoveryProxyInput" placeholder="New Proxy (ip:port@user:pass)" class="bg-black border border-zinc-800 rounded-lg p-3 text-sm focus:border-purple-500 outline-none w-full md:w-80">
-          <button onclick="recoverSelectedBots()" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold rounded-lg text-sm whitespace-nowrap">Revive Selected (Max 4)</button>
-        </div>
-      </div>
-      <div id="proxydown-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-    </div>
-
-    <!-- TAB 4: BANNED BOTS -->
-    <div id="tab-banned" class="tab-content hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
   </div>
 
   <script>
     const socket = io();
 
-    function enterConsole() {
-      document.getElementById('landing-page').classList.add('hidden');
-      document.getElementById('dashboard-console').classList.remove('hidden');
-    }
+    // SCREEN TRANSITION
+    const enterBtn = document.getElementById('enter-btn');
+    const landingScreen = document.getElementById('landing-screen');
+    const dashboardScreen = document.getElementById('dashboard-screen');
 
-    function exitConsole() {
-      document.getElementById('dashboard-console').classList.add('hidden');
-      document.getElementById('landing-page').classList.remove('hidden');
-    }
-
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('[id^="btn-"]').forEach(el => { el.className = 'px-5 py-2.5 rounded-xl font-bold bg-zinc-900 text-zinc-400 hover:text-white transition-all text-sm'; });
-      
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      document.getElementById(`btn-${tab}`).className = 'px-5 py-2.5 rounded-xl font-bold bg-purple-600 text-white transition-all text-sm';
-    }
-
-    // Deploy Form Handler
-    document.getElementById('deploy-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const serverIP = document.getElementById('serverIP').value;
-      const password = document.getElementById('password').value;
-      const usernamesRaw = document.getElementById('usernamesRaw').value;
-      const proxiesRaw = document.getElementById('proxiesRaw').value;
-
-      socket.emit('deploy_bots', { serverIP, usernamesRaw, password, proxiesRaw });
+    enterBtn.addEventListener('click', () => {
+      landingScreen.style.display = 'none';
+      dashboardScreen.style.display = 'block';
     });
 
-    socket.on('deploy_success', (msg) => {
-      const msgEl = document.getElementById('deploy-msg');
-      msgEl.className = 'mt-3 text-sm font-semibold text-green-400';
-      msgEl.innerText = msg;
-      setTimeout(() => msgEl.innerText = '', 5000);
-    });
-
-    socket.on('deploy_error', (err) => {
-      const msgEl = document.getElementById('deploy-msg');
-      msgEl.className = 'mt-3 text-sm font-semibold text-red-400';
-      msgEl.innerText = err;
-    });
-
-    function addStaff() {
-      const val = document.getElementById('staffInput').value;
-      if (val) {
-        socket.emit('add_staff', val);
-        document.getElementById('staffInput').value = '';
+    // ALERT SYSTEM
+    function showAlert(type, msg) {
+      const errBox = document.getElementById('alert-error');
+      const succBox = document.getElementById('alert-success');
+      if (type === 'error') {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+        setTimeout(() => errBox.style.display = 'none', 6000);
+      } else {
+        succBox.textContent = msg;
+        succBox.style.display = 'block';
+        setTimeout(() => succBox.style.display = 'none', 6000);
       }
     }
+
+    socket.on('deploy_error', msg => showAlert('error', msg));
+    socket.on('deploy_success', msg => showAlert('success', msg));
+
+    // DEPLOY BOTS
+    document.getElementById('deploy-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      socket.emit('deploy_bots', {
+        serverIP: document.getElementById('deploy-server').value,
+        usernamesRaw: document.getElementById('deploy-usernames').value,
+        password: document.getElementById('deploy-password').value,
+        proxiesRaw: document.getElementById('deploy-proxies').value
+      });
+    });
+
+    // STAFF EVASION CONTROLS
+    document.getElementById('add-staff-btn').addEventListener('click', () => {
+      const input = document.getElementById('staff-name-input');
+      if (input.value.trim()) {
+        socket.emit('add_staff', input.value.trim());
+        input.value = '';
+      }
+    });
 
     function removeStaff(name) {
       socket.emit('remove_staff', name);
     }
 
-    function stopBot(id) {
-      socket.emit('stop_bot', id);
-    }
+    // PROXY DOWN REVIVAL
+    document.getElementById('revive-btn').addEventListener('click', () => {
+      const checkboxes = document.querySelectorAll('.pd-checkbox:checked');
+      const botIds = Array.from(checkboxes).map(cb => cb.value);
+      const newProxy = document.getElementById('recovery-proxy-input').value.trim();
 
-    function sendChat(id) {
-      const input = document.getElementById(`chat_${id}`);
-      if (input && input.value.trim()) {
-        socket.emit('bot_chat', { id, message: input.value.trim() });
-        input.value = '';
-      }
-    }
+      if (botIds.length === 0) return showAlert('error', 'Select at least one bot to revive!');
+      if (!newProxy) return showAlert('error', 'Please enter a valid new SOCKS5 proxy!');
 
-    // Realtime Dashboard Data Renderer
-    socket.on('dashboard_update', (data) => {
-      document.getElementById('count-active').innerText = data.active.length;
-      document.getElementById('count-successafk').innerText = data.successAfk.length;
-      document.getElementById('count-proxydown').innerText = data.proxyDown.length;
-      document.getElementById('count-banned').innerText = data.banned.length;
-
-      // Render Staff List Navigation
-      const staffContainer = document.getElementById('staff-list-container');
-      if (!data.staffList || data.staffList.length === 0) {
-        staffContainer.innerHTML = '<p class="text-xs text-gray-500">No staff members listed.</p>';
-      } else {
-        staffContainer.innerHTML = data.staffList.map(s => `
-          <div class="flex items-center justify-between bg-black/50 p-2 rounded-lg border border-zinc-800 text-xs">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-purple-400">${s.num}.</span>
-              <img src="${s.headUrl}" alt="${s.name}" class="w-6 h-6 rounded pixelated bg-zinc-800" onerror="this.src='https://mc-heads.net/avatar/steve/28'">
-              <span class="font-semibold text-gray-200">${s.name}</span>
-            </div>
-            <button onclick="removeStaff('${s.name}')" class="text-red-400 hover:text-red-300 font-bold text-xs px-2 py-0.5 bg-red-950/40 hover:bg-red-900/60 rounded border border-red-800/50">Remove</button>
-          </div>
-        `).join('');
-      }
-
-      // Render Active Bots with Commands Input
-      const activeContainer = document.getElementById('tab-active');
-      if (data.active.length === 0) {
-        activeContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No active bots running right now. Deploy some above!</div>`;
-      } else {
-        activeContainer.innerHTML = data.active.map(b => `
-          <div class="bg-zinc-900/60 border border-zinc-800 p-5 rounded-2xl glow-box flex flex-col justify-between">
-            <div>
-              <div class="flex justify-between items-start mb-3">
-                <div class="flex items-center gap-2">
-                  <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-zinc-700 bg-black">
-                  <div>
-                    <h3 class="font-extrabold text-base text-purple-300">${b.username}</h3>
-                    <p class="text-[10px] text-gray-500">Pass: ${b.password}</p>
-                  </div>
-                </div>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-950 text-green-400 border border-green-800">ONLINE</span>
-              </div>
-              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
-              <p class="text-xs text-gray-400 mb-1">Status: <span class="text-purple-400">${b.status}</span></p>
-              <p class="text-xs text-gray-400 mb-1">Uptime: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
-              <p class="text-xs text-gray-400 mb-1">Health / Ping: ❤️ ${b.health} | 🏓 ${b.ping}</p>
-              <p class="text-xs text-gray-400 mb-3">Pos: ${b.pos} | Drops: <span class="text-yellow-400">${b.drops}/25</span></p>
-              
-              <div class="bg-black/60 p-3 rounded-xl font-mono text-[11px] text-gray-300 mb-3 h-20 overflow-y-auto border border-zinc-800">
-                ${b.logs.join('<br>')}
-              </div>
-
-              <!-- Chat / Command System -->
-              <div class="flex gap-2 mb-4">
-                <input type="text" id="chat_${b.id}" placeholder="Send command or chat..." class="w-full bg-black border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-purple-500" onkeypress="if(event.key==='Enter') sendChat('${b.id}')">
-                <button onclick="sendChat('${b.id}')" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-lg whitespace-nowrap">Send</button>
-              </div>
-            </div>
-            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800 rounded-lg text-xs font-bold transition-all">Stop Bot</button>
-          </div>
-        `).join('');
-      }
-
-      // Render Successfully AFK Section
-      const successContainer = document.getElementById('tab-successafk');
-      if (data.successAfk.length === 0) {
-        successContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No completed 20h 10m sessions yet.</div>`;
-      } else {
-        successContainer.innerHTML = data.successAfk.map(b => `
-          <div class="bg-zinc-900/60 border border-green-900/40 p-5 rounded-2xl flex flex-col justify-between">
-            <div>
-              <div class="flex items-center gap-3 mb-3">
-                <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-green-700 bg-black">
-                <div>
-                  <h3 class="font-extrabold text-base text-green-400">${b.username}</h3>
-                  <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
-                </div>
-              </div>
-              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
-              <p class="text-xs text-gray-400 mb-1">Total AFK Time: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
-              <p class="text-xs text-gray-500 mb-3">Completed At: ${b.completedAt}</p>
-            </div>
-            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-xs font-bold transition-all">Clear Entry</button>
-          </div>
-        `).join('');
-      }
-
-      // Render Proxy Down Section
-      const proxyDownContainer = document.getElementById('proxydown-grid');
-      if (data.proxyDown.length === 0) {
-        proxyDownContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No bots currently down due to proxies.</div>`;
-      } else {
-        proxyDownContainer.innerHTML = data.proxyDown.map(b => `
-          <div class="bg-zinc-900/60 border border-yellow-900/40 p-5 rounded-2xl flex flex-col justify-between">
-            <div>
-              <div class="flex items-center gap-3 mb-3">
-                <input type="checkbox" value="${b.id}" class="proxy-checkbox w-4 h-4 accent-purple-600 cursor-pointer">
-                <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-yellow-700 bg-black">
-                <div>
-                  <h3 class="font-extrabold text-base text-yellow-400">${b.username}</h3>
-                  <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
-                </div>
-              </div>
-              <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
-              <p class="text-xs text-gray-400 mb-1">Saved Uptime: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
-              <p class="text-xs text-gray-500 mb-3">Failed At: ${b.failedAt}</p>
-            </div>
-            <button onclick="stopBot('${b.id}')" class="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-gray-300 rounded-lg text-xs font-bold transition-all">Remove from List</button>
-          </div>
-        `).join('');
-      }
-
-      // Render Banned Bots
-      const bannedContainer = document.getElementById('tab-banned');
-      if (data.banned.length === 0) {
-        bannedContainer.innerHTML = `<div class="col-span-full text-center py-12 text-zinc-600 font-semibold">No bans recorded.</div>`;
-      } else {
-        bannedContainer.innerHTML = data.banned.map(b => `
-          <div class="bg-zinc-900/60 border border-red-900/40 p-5 rounded-2xl">
-            <div class="flex items-center gap-3 mb-3">
-              <img src="https://mc-heads.net/avatar/${encodeURIComponent(b.username)}/32" class="w-8 h-8 pixelated rounded border border-red-700 bg-black">
-              <div>
-                <h3 class="font-extrabold text-base text-red-400">${b.username}</h3>
-                <p class="text-xs text-gray-400">Password: <span class="text-white font-mono">${b.password}</span></p>
-              </div>
-            </div>
-            <p class="text-xs text-gray-400 mb-1">Server: <span class="text-white">${b.server}</span></p>
-            <p class="text-xs text-gray-400 mb-1">Ban Reason: <span class="text-white font-semibold">${b.reason}</span></p>
-            <p class="text-xs text-gray-400 mb-1">Uptime before Ban: <span class="text-cyan-400 font-bold">${b.uptime}</span></p>
-            <p class="text-xs text-gray-500">Banned At: ${b.time}</p>
-          </div>
-        `).join('');
-      }
+      socket.emit('recover_proxy_down', { botIds, newProxy });
+      document.getElementById('recovery-proxy-input').value = '';
     });
 
-    function recoverSelectedBot
+    // BOT ACTIONS
+    function sendChat(id) {
+      const msg = prompt('Enter message to send in chat:');
+      if (msg) socket.emit('bot_chat', { id, message: msg });
+    }
+
+    function stopBot(id) {
+      if (confirm('Are you sure you want to stop this bot?')) {
+        socket.emit('stop_bot', id);
+      }
+    }
+
+    // REAL-TIME DASHBOARD RENDERER
+    socket.on('dashboard_update', data => {
+      // 1. ACTIVE BOTS
+      const activeBody = document.getElementById('active-bots-body');
+      if (data.active.length === 0) {
+        activeBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No active bots connected.</td></tr>';
+      } else {
+        activeBody.innerHTML = data.active.map(b => `
+          <tr>
+            <td><strong>${b.username}</strong></td>
+            <td><span class="badge ${b.status.includes('Connected') ? 'badge-success' : 'badge-warning'}">${b.status}</span></td>
+            <td>${b.ping} ms</td>
+            <td><span style="color: var(--accent-color); font-weight: bold;">${b.uptime}</span></td>
+            <td><small>${b.pos}</small></td>
+            <td><div class="log-box">${b.logs.join('<br>')}</div></td>
+            <td>
+              <button class="btn btn-primary btn-sm" onclick="sendChat('${b.id}')"><i class="fa-solid fa-comment"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="stopBot('${b.id}')"><i class="fa-solid fa-stop"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      // 2. PROXY DOWN
+      const pdBody = document.getElementById('proxy-down-body');
+      if (data.proxyDown.length === 0) {
+        pdBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No proxy failures reported.</td></tr>';
+      } else {
+        pdBody.innerHTML = data.proxyDown.map(pd => `
+          <tr>
+            <td><input type="checkbox" class="pd-checkbox" value="${pd.id}"></td>
+            <td><strong>${pd.username}</strong></td>
+            <td>${pd.server}</td>
+            <td>${pd.uptime}</td>
+            <td><small>${pd.failedAt}</small></td>
+          </tr>
+        `).join('');
+      }
+
+      // 3. SUCCESS AFK
+      const successBody = document.getElementById('success-afk-body');
+      if (data.successAfk.length === 0) {
+        successBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No bots have completed the target cycle yet.</td></tr>';
+      } else {
+        successBody.innerHTML = data.successAfk.map(s => `
+          <tr>
+            <td><strong>${s.username}</strong></td>
+            <td>${s.server}</td>
+            <td><span class="badge badge-success">${s.uptime}</span></td>
+            <td><small>${s.completedAt}</small></td>
+          </tr>
+        `).join('');
+      }
+
+      // 4. BANNED BOTS
+      const bannedBody = document.getElementById('banned-bots-body');
+      if (data.banned.length === 0) {
+        bannedBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No banned accounts recorded.</td></tr>';
+      } else {
+        bannedBody.innerHTML = data.banned.map(ban => `
+          <tr>
+            <td><strong>${ban.username}</strong></td>
+            <td>${ban.server}</td>
+            <td><span class="badge badge-danger">${ban.reason}</span></td>
+            <td>${ban.uptime}</td>
+            <td><small>${ban.time}</small></td>
+          </tr>
+        `).join('');
+      }
+
+      // 5. STAFF LIST
+      const staffContainer = document.getElementById('staff-list-container');
+      staffContainer.innerHTML = data.staffList.map(s => `
+        <div class="staff-chip">
+          <img src="${s.headUrl}" alt="${s.name}">
+          <span>${s.name}</span>
+          <i class="fa-solid fa-xmark remove-staff" onclick="removeStaff('${s.name}')"></i>
+        </div>
+      `).join('');
+    });
+  </script>
+</body>
+</html>
